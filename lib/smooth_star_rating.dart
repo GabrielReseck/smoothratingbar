@@ -11,6 +11,7 @@ class SmoothStarRating extends StatefulWidget {
   final int starCount;
   final double rating;
   final RatingChangeCallback onRated;
+  final RatingChangeCallback onHover;
   final Color color;
   final Color borderColor;
   final double size;
@@ -28,6 +29,7 @@ class SmoothStarRating extends StatefulWidget {
     this.rating = 0.0,
     this.defaultIconData = Icons.star_border,
     this.onRated,
+    this.onHover,
     this.color,
     this.borderColor,
     this.size = 25,
@@ -107,6 +109,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                     //reset to zero only if rating is not set by user
                     setState(() {
                       currentRating = 0;
+                      if (widget.onHover != null) widget.onHover(0);
                     });
                   }
                 },
@@ -117,17 +120,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                   RenderBox box = context.findRenderObject();
                   var _pos = box.globalToLocal(event.position);
                   var i = _pos.dx / widget.size;
-                  var newRating =
-                      widget.allowHalfRating ? i : i.round().toDouble();
-                  if (newRating > widget.starCount) {
-                    newRating = widget.starCount.toDouble();
-                  }
-                  if (newRating < 0) {
-                    newRating = 0.0;
-                  }
-                  setState(() {
-                    currentRating = newRating;
-                  });
+                  setNewRating(i);
                 },
                 child: GestureDetector(
                   onTapDown: (detail) {
@@ -136,17 +129,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                     RenderBox box = context.findRenderObject();
                     var _pos = box.globalToLocal(detail.globalPosition);
                     var i = ((_pos.dx - widget.spacing) / widget.size);
-                    var newRating =
-                        widget.allowHalfRating ? i : i.round().toDouble();
-                    if (newRating > widget.starCount) {
-                      newRating = widget.starCount.toDouble();
-                    }
-                    if (newRating < 0) {
-                      newRating = 0.0;
-                    }
-                    setState(() {
-                      currentRating = newRating;
-                    });
+                    setNewRating(i);
                     if (widget.onRated != null) {
                       widget.onRated(normalizeRating(currentRating));
                     }
@@ -157,17 +140,8 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                     RenderBox box = context.findRenderObject();
                     var _pos = box.globalToLocal(dragDetails.globalPosition);
                     var i = _pos.dx / widget.size;
-                    var newRating =
-                        widget.allowHalfRating ? i : i.round().toDouble();
-                    if (newRating > widget.starCount) {
-                      newRating = widget.starCount.toDouble();
-                    }
-                    if (newRating < 0) {
-                      newRating = 0.0;
-                    }
-                    setState(() {
-                      currentRating = newRating;
-                    });
+                    var newRating = setNewRating(i);
+
                     debounceTimer?.cancel();
                     debounceTimer = Timer(Duration(milliseconds: 100), () {
                       if (widget.onRated != null) {
@@ -184,18 +158,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                   RenderBox box = context.findRenderObject();
                   var _pos = box.globalToLocal(detail.globalPosition);
                   var i = ((_pos.dx - widget.spacing) / widget.size);
-                  var newRating =
-                      widget.allowHalfRating ? i : i.round().toDouble();
-                  if (newRating > widget.starCount) {
-                    newRating = widget.starCount.toDouble();
-                  }
-                  if (newRating < 0) {
-                    newRating = 0.0;
-                  }
-                  newRating = normalizeRating(newRating);
-                  setState(() {
-                    currentRating = newRating;
-                  });
+                  setNewRating(i, normalize: true);
                 },
                 onTapUp: (e) {
                   if (widget.onRated != null) widget.onRated(currentRating);
@@ -204,17 +167,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
                   RenderBox box = context.findRenderObject();
                   var _pos = box.globalToLocal(dragDetails.globalPosition);
                   var i = _pos.dx / widget.size;
-                  var newRating =
-                      widget.allowHalfRating ? i : i.round().toDouble();
-                  if (newRating > widget.starCount) {
-                    newRating = widget.starCount.toDouble();
-                  }
-                  if (newRating < 0) {
-                    newRating = 0.0;
-                  }
-                  setState(() {
-                    currentRating = newRating;
-                  });
+                  var newRating = setNewRating(i);
                   debounceTimer?.cancel();
                   debounceTimer = Timer(Duration(milliseconds: 100), () {
                     if (widget.onRated != null) {
@@ -227,6 +180,26 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
               );
 
     return star;
+  }
+
+  double setNewRating(double i, {bool normalize = false}) {
+    var newRating = widget.allowHalfRating ? i : i.round().toDouble();
+    if (newRating > widget.starCount) {
+      newRating = widget.starCount.toDouble();
+    }
+    if (newRating < 0) {
+      newRating = 0.0;
+    }
+    if (normalize) {
+      newRating = normalizeRating(newRating);
+    }
+
+    setState(() {
+      currentRating = newRating;
+      if (widget.onHover != null) widget.onHover(newRating);
+    });
+
+    return newRating;
   }
 
   double normalizeRating(double newRating) {
