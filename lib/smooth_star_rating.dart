@@ -49,10 +49,13 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
 
   //tracks for user tapping on this widget
   bool isWidgetTapped = false;
+  double initialRating;
   double currentRating;
   Timer debounceTimer;
+
   @override
   void initState() {
+    initialRating = widget.rating;
     currentRating = widget.rating;
     super.initState();
   }
@@ -66,6 +69,12 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
 
   @override
   Widget build(BuildContext context) {
+    if (initialRating != widget.rating) {
+      currentRating = widget.rating;
+      initialRating = widget.rating;
+    }
+
+    //print('Rebuild CR:$currentRating WR:${widget.rating}');
     return Material(
       color: Colors.transparent,
       child: Wrap(
@@ -195,8 +204,9 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
     }
 
     setState(() {
+      if (widget.onHover != null && currentRating != newRating)
+        widget.onHover(newRating);
       currentRating = newRating;
-      if (widget.onHover != null) widget.onHover(newRating);
     });
 
     return newRating;

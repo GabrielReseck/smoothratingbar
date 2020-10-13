@@ -10,6 +10,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   var rating = 3.0;
+  var hoverValue = 3.0;
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +22,41 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: Center(
-            child: SmoothStarRating(
-          rating: rating,
-          isReadOnly: false,
-          size: 80,
-          filledIconData: Icons.star,
-          halfFilledIconData: Icons.star_half,
-          defaultIconData: Icons.star_border,
-          starCount: 5,
-          allowHalfRating: true,
-          spacing: 2.0,
-          onRated: (value) {
-            print("rating value -> $value");
-            // print("rating value dd -> ${value.truncate()}");
-          },
-        )),
+          child: Column(
+            children: [
+              SmoothStarRating(
+                rating: rating,
+                isReadOnly: false,
+                size: 80,
+                filledIconData: Icons.star,
+                halfFilledIconData: Icons.star_half,
+                defaultIconData: Icons.star_border,
+                starCount: 5,
+                allowHalfRating: true,
+                //*when between stars onExit is called and value is set to zero
+                spacing: 20.0,
+                onRated: (value) {
+                  print("onPress $value");
+                },
+                onHover: (x) {
+                  setState(() {
+                    hoverValue = x;
+                    //print('onHover $hoverValue');
+                  });
+                },
+              ),
+              FlatButton(
+                onPressed: () {
+                  setState(() {
+                    rating == 5 ? rating = 0 : rating = 5;
+                    print('New rating: $rating');
+                  });
+                },
+                child: Text('Toggle ($rating , $hoverValue)'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
