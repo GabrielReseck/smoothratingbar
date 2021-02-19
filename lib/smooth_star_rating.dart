@@ -46,7 +46,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
 
   late double initialRating;
   late double currentRating;
-  double lastTappedRating = 0.0;
+  late double lastTappedRating;
 
   Timer? debounceTimer;
 
@@ -54,6 +54,7 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
   void initState() {
     initialRating = widget.rating;
     currentRating = widget.rating;
+    lastTappedRating = widget.rating;
     super.initState();
   }
 
@@ -65,9 +66,11 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
 
   @override
   Widget build(BuildContext context) {
+    //Guarantees the correct rating if the rating was changed externally
     if (initialRating != widget.rating) {
       currentRating = widget.rating;
       initialRating = widget.rating;
+      lastTappedRating = widget.rating;
     }
 
     return Material(
