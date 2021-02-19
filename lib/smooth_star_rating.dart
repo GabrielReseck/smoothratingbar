@@ -10,22 +10,20 @@ typedef void RatingChangeCallback(double rating);
 class SmoothStarRating extends StatefulWidget {
   final int starCount;
   final double rating;
-  final RatingChangeCallback onRated;
-  final RatingChangeCallback onHover;
-  final Color color;
-  final Color borderColor;
+  final RatingChangeCallback? onRated;
+  final RatingChangeCallback? onHover;
+  final Color? color;
+  final Color? borderColor;
   final double size;
   final bool allowHalfRating;
   final IconData filledIconData;
   final IconData halfFilledIconData;
   final IconData
       defaultIconData; //this is needed only when having fullRatedIconData && halfRatedIconData
-  final double spacing;
   final bool isReadOnly;
-  SmoothStarRating({
+  const SmoothStarRating({
     this.starCount = 5,
     this.isReadOnly = false,
-    this.spacing = 0.0,
     this.rating = 0.0,
     this.defaultIconData = Icons.star_border,
     this.onRated,
@@ -36,22 +34,21 @@ class SmoothStarRating extends StatefulWidget {
     this.filledIconData = Icons.star,
     this.halfFilledIconData = Icons.star_half,
     this.allowHalfRating = true,
-  }) {
-    assert(this.rating != null);
-  }
+  });
+
   @override
   _SmoothStarRatingState createState() => _SmoothStarRatingState();
 }
 
 class _SmoothStarRatingState extends State<SmoothStarRating> {
-  final double halfStarThreshold =
-      0.53; //half star value starts from this number
+  ///Half star value starts from this number
+  static const double halfStarThreshold = 0.53;
 
-  //tracks for user tapping on this widget
-  bool isWidgetTapped = false;
-  double initialRating;
-  double currentRating;
-  Timer debounceTimer;
+  late double initialRating;
+  late double currentRating;
+  double lastTappedRating = 0.0;
+
+  Timer? debounceTimer;
 
   @override
   void initState() {
@@ -63,7 +60,6 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
   @override
   void dispose() {
     debounceTimer?.cancel();
-    debounceTimer = null;
     super.dispose();
   }
 
@@ -74,14 +70,15 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
       initialRating = widget.rating;
     }
 
-    //print('Rebuild CR:$currentRating WR:${widget.rating}');
     return Material(
       color: Colors.transparent,
       child: Wrap(
-          alignment: WrapAlignment.start,
-          spacing: widget.spacing,
-          children: List.generate(
-              widget.starCount, (index) => buildStar(context, index))),
+        alignment: WrapAlignment.start,
+        children: List.generate(
+          widget.starCount,
+          (index) => buildStar(context, index),
+        ),
+      ),
     );
   }
 
@@ -114,48 +111,40 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
         : kIsWeb
             ? MouseRegion(
                 onExit: (event) {
-                  if (widget.onRated != null && !isWidgetTapped) {
-                    //reset to zero only if rating is not set by user
-                    setState(() {
-                      currentRating = 0;
-                      if (widget.onHover != null) widget.onHover(0);
-                    });
-                  }
-                },
-                onEnter: (event) {
-                  isWidgetTapped = false; //reset
+                  //Resets to lastTappedRating onExit
+                  setState(() {
+                    currentRating = lastTappedRating;
+                    if (widget.onHover != null)
+                      widget.onHover!(lastTappedRating);
+                  });
                 },
                 onHover: (event) {
-                  RenderBox box = context.findRenderObject();
+                  RenderBox box = context.findRenderObject() as RenderBox;
                   var _pos = box.globalToLocal(event.position);
                   var i = _pos.dx / widget.size;
                   setNewRating(i);
                 },
                 child: GestureDetector(
                   onTapDown: (detail) {
-                    isWidgetTapped = true;
-
-                    RenderBox box = context.findRenderObject();
+                    RenderBox box = context.findRenderObject() as RenderBox;
                     var _pos = box.globalToLocal(detail.globalPosition);
-                    var i = ((_pos.dx - widget.spacing) / widget.size);
-                    setNewRating(i);
+                    var i = _pos.dx / widget.size;
+                    setNewRating(i, isTap: true);
                     if (widget.onRated != null) {
-                      widget.onRated(normalizeRating(currentRating));
+                      widget.onRated!(normalizeRating(currentRating));
                     }
                   },
                   onHorizontalDragUpdate: (dragDetails) {
-                    isWidgetTapped = true;
-
-                    RenderBox box = context.findRenderObject();
+                    RenderBox box = context.findRenderObject() as RenderBox;
                     var _pos = box.globalToLocal(dragDetails.globalPosition);
                     var i = _pos.dx / widget.size;
-                    var newRating = setNewRating(i);
+                    var newRating = setNewRating(i, isTap: true);
 
                     debounceTimer?.cancel();
                     debounceTimer = Timer(Duration(milliseconds: 100), () {
                       if (widget.onRated != null) {
                         currentRating = normalizeRating(newRating);
-                        widget.onRated(currentRating);
+                        widget.onRated!(currentRating);
                       }
                     });
                   },
@@ -164,24 +153,26 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
               )
             : GestureDetector(
                 onTapDown: (detail) {
-                  RenderBox box = context.findRenderObject();
+                  RenderBox box = context.findRenderObject() as RenderBox;
                   var _pos = box.globalToLocal(detail.globalPosition);
-                  var i = ((_pos.dx - widget.spacing) / widget.size);
-                  setNewRating(i, normalize: true);
+                  var i = _pos.dx / widget.size;
+                  setNewRating(i, normalize: true, isTap: true);
                 },
                 onTapUp: (e) {
-                  if (widget.onRated != null) widget.onRated(currentRating);
+                  if (widget.onRated != null) {
+                    widget.onRated!(currentRating);
+                  }
                 },
                 onHorizontalDragUpdate: (dragDetails) {
-                  RenderBox box = context.findRenderObject();
+                  RenderBox box = context.findRenderObject() as RenderBox;
                   var _pos = box.globalToLocal(dragDetails.globalPosition);
                   var i = _pos.dx / widget.size;
-                  var newRating = setNewRating(i);
+                  var newRating = setNewRating(i, isTap: true);
                   debounceTimer?.cancel();
                   debounceTimer = Timer(Duration(milliseconds: 100), () {
                     if (widget.onRated != null) {
                       currentRating = normalizeRating(newRating);
-                      widget.onRated(currentRating);
+                      widget.onRated!(currentRating);
                     }
                   });
                 },
@@ -191,7 +182,11 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
     return star;
   }
 
-  double setNewRating(double i, {bool normalize = false}) {
+  double setNewRating(
+    double i, {
+    bool normalize = false,
+    bool isTap = false,
+  }) {
     var newRating = widget.allowHalfRating ? i : i.round().toDouble();
     if (newRating > widget.starCount) {
       newRating = widget.starCount.toDouble();
@@ -204,9 +199,13 @@ class _SmoothStarRatingState extends State<SmoothStarRating> {
     }
 
     setState(() {
-      if (widget.onHover != null && currentRating != newRating)
-        widget.onHover(newRating);
+      if (widget.onHover != null && currentRating != newRating) {
+        widget.onHover!(newRating);
+      }
       currentRating = newRating;
+      if (isTap) {
+        lastTappedRating = newRating;
+      }
     });
 
     return newRating;

@@ -9,8 +9,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  var rating = 3.0;
-  var hoverValue = 3.0;
+  var rating = 0.0;
+  var hoverValue = 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +33,10 @@ class _MyAppState extends State<MyApp> {
                 defaultIconData: Icons.star_border,
                 starCount: 5,
                 allowHalfRating: true,
-                //*when between stars onExit is called and value is set to zero
-                spacing: 20.0,
                 onRated: (value) {
                   print("onPress $value");
+                  rating = value;
+                  setState(() {});
                 },
                 onHover: (x) {
                   setState(() {
@@ -45,7 +45,7 @@ class _MyAppState extends State<MyApp> {
                   });
                 },
               ),
-              FlatButton(
+              TextButton(
                 onPressed: () {
                   setState(() {
                     rating == 5 ? rating = 0 : rating = 5;
